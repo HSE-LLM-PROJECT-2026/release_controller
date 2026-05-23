@@ -69,19 +69,19 @@ LOG_LEVEL=INFO
 
 ## Основные API-ручки
 
-| Метод | Ручка | Кто использует | Назначение |
-|--------|-------|----------------|------------|
-| `GET` | `/health` | Ingress, мониторинг | Проверяет доступность release controller. |
-| `GET` | `/livez` | Kubernetes | Liveness probe контейнера. |
-| `GET` | `/service-info` | Frontend, state facade | Возвращает служебную информацию о release controller. |
-| `GET` | `/releases` | Frontend, state facade | Возвращает список релизов, их статусы, проценты трафика и результат. |
-| `POST` | `/releases` | Frontend, CI/CD | Создает задачу канареечного релиза от source deployment к target deployment. |
-| `GET` | `/releases/{release_id}` | Frontend | Возвращает детали релиза, шаги rollout и SLO-события. |
-| `POST` | `/releases/{release_id}/pause` | Frontend | Приостанавливает автоматическое продвижение релиза. |
-| `POST` | `/releases/{release_id}/resume` | Frontend | Возобновляет релиз с текущего шага. |
-| `POST` | `/releases/{release_id}/rollback` | Frontend, release controller | Возвращает веса маршрута к исходному deployment. |
-| `POST` | `/releases/{release_id}/skip-to-100` | Frontend | Форсированно переводит весь трафик на target deployment. |
-| `POST` | `/internal/release-loop/tick` | Scheduler, Kubernetes CronJob | Один проход release loop: проверка метрик и изменение весов через routing service. |
+| Метод | Ручка | Назначение |
+|--------|-------|------------|
+| `GET` | `/health` | Проверяет доступность release controller. |
+| `GET` | `/livez` | Liveness probe контейнера. |
+| `GET` | `/service-info` | Возвращает служебную информацию о release controller. |
+| `GET` | `/releases` | Возвращает список релизов, их статусы, проценты трафика и результат. |
+| `POST` | `/releases` | Создает задачу канареечного релиза от source deployment к target deployment. |
+| `GET` | `/releases/{release_id}` | Возвращает детали релиза, шаги rollout и SLO-события. |
+| `POST` | `/releases/{release_id}/pause` | Приостанавливает автоматическое продвижение релиза. |
+| `POST` | `/releases/{release_id}/resume` | Возобновляет релиз с текущего шага. |
+| `POST` | `/releases/{release_id}/rollback` | Возвращает веса маршрута к исходному deployment. |
+| `POST` | `/releases/{release_id}/skip-to-100` | Форсированно переводит весь трафик на target deployment. |
+| `POST` | `/internal/release-loop/tick` | Один проход release loop: проверка метрик и изменение весов через routing service. |
 
 ## Сборка и запуск в Docker
 
