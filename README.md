@@ -1,56 +1,89 @@
 # Release Controller
 
+[HSE-LLM-PROJECT-2026/release_controller](https://github.com/HSE-LLM-PROJECT-2026/release_controller)
+
 ## Описание
 
-Контроллер канареечных релизов: поэтапное переключение трафика, pause/resume, rollback и принудительный переход на 100%.
+FastAPI-сервис и контроллер для управления канареечными релизами. Он ведет rollout самостоятельно, проверяет SLO-метрики и дергает routing service для изменения весов.
 
 ## Основные возможности
 
-- создание release
-- управление стадиями release
-- loop-триггер для фонового шага контроллера
+- создание release-задачи
+- pause/resume rollout
+- rollback при проблемах с SLO
+- переключение релиза сразу на 100%
+- служебная ручка tick для release loop
+
+## Основные API-ручки
+
+- `/releases`
+- `/releases/{release_id}`
+- `/releases/{release_id}/pause`
+- `/releases/{release_id}/resume`
+- `/releases/{release_id}/rollback`
+- `/internal/release-loop/tick`
 
 ## Структура проекта
 
-- `app/` - код сервиса (FastAPI, config, domain handlers)
-- `deploy/` - служебные файлы для роли сервиса в деплое
-- `pyproject.toml` - зависимости и метаданные проекта
-- `Dockerfile` - сборка контейнера
-- `.env.example` - пример переменных окружения
+- `app/` — код FastAPI-сервиса
+- `app/main.py` — HTTP API и базовая service runtime логика
+- `app/config.py` — настройки сервиса через переменные окружения
+- `deploy/` — файлы для раскатки сервиса
+- `Dockerfile` — сборка контейнера
+- `pyproject.toml`, `uv.lock` — зависимости Python
+- `.env.example` — пример конфигурации
 
-## Быстрый старт (локально)
+## Быстрый старт локально
 
 1. Установить зависимости:
-   `uv sync --frozen --extra dev`
+   ```bash
+   uv sync --frozen
+   ```
+
 2. Запустить сервис:
-   `uv run uvicorn app.main:app --host 0.0.0.0 --port 8000`
-3. Проверить health:
-   `curl http://127.0.0.1:8000/health`
+   ```bash
+   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+3. Проверить, что сервис живой:
+   ```bash
+   curl http://localhost:8000/health
+   ```
 
 ## Переменные окружения
 
-- `SERVICE_ROLE` - роль сервиса в control plane
-- `SERVICE_NAME` - техническое имя сервиса
-- `POSTGRES_DSN` - строка подключения к PostgreSQL
-- `PROMETHEUS_BASE_URL` - адрес Prometheus
-- `SERVICE_TO_SERVICE_URLS_JSON` - карта внутренних URL сервисов
+- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — подключение к PostgreSQL
+- `K8S_NAMESPACE` — namespace платформы в Kubernetes
+- `SECURITY_AUDIT_BASE_URL` — адрес security/audit service
+- `SECURITY_AUDIT_SERVICE_TOKEN` — service-to-service токен
+- `STATUS_PROMETHEUS_BASE_URL` — адрес Prometheus для сервисов, которым нужны метрики
+- `IMAGE_REPOSITORY`, `IMAGE_TAG`, `RELEASE_NAME`, `KUBECONFIG_PATH` — параметры deploy-скриптов
+
+Полный пример лежит в `.env.example`.
 
 ## Docker
 
-- Сборка: `docker build -t release_controller:local .`
-- Запуск: `docker run --rm -p 8000:8000 --env-file .env release_controller:local`
+```bash
+docker build -t awesomecosmonaut/release_controller:latest .
+docker run --env-file .env -p 8000:8000 awesomecosmonaut/release_controller:latest
+```
 
 ## Деплой
 
-Файлы для деплоя лежат в `deploy/`.
+Файлы для раскатки лежат в `deploy/`.
 
-## Основные API ручки
+```bash
+cd deploy
+./deploy-from-scratch.sh
+```
 
-- `GET /releases`
-- `POST /releases`
-- `GET /releases/{release_id}`
-- `POST /releases/{release_id}/pause`
-- `POST /releases/{release_id}/resume`
-- `POST /releases/{release_id}/rollback`
-- `POST /releases/{release_id}/skip-to-100`
-- `POST /internal/release-loop/tick`
+Если нужно пересобрать образ и полностью переустановить сервис:
+
+```bash
+cd deploy
+./rebuild-delete-deploy.sh
+```
+
+## Автор
+
+Igor Malysh
