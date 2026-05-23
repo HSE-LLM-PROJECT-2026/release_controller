@@ -1,7 +1,5 @@
 # Release Controller
 
-[HSE-LLM-PROJECT-2026/release_controller](https://github.com/HSE-LLM-PROJECT-2026/release_controller)
-
 ## Описание
 
 FastAPI-сервис и контроллер для управления канареечными релизами. Он ведет rollout самостоятельно, проверяет SLO-метрики и дергает routing service для изменения весов.
