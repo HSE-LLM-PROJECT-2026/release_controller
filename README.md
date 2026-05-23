@@ -2,85 +2,100 @@
 
 ## Описание
 
-FastAPI-сервис и контроллер для управления канареечными релизами. Он ведет rollout самостоятельно, проверяет SLO-метрики и дергает routing service для изменения весов.
+Этот репозиторий содержит сервис управления канареечными релизами. Контроллер ведет rollout, проверяет SLO-метрики и меняет веса трафика через routing service.
 
 ## Основные возможности
-
 - создание release-задачи
-- pause/resume rollout
-- rollback при проблемах с SLO
-- переключение релиза сразу на 100%
-- служебная ручка tick для release loop
-
-## Основные API-ручки
-
-- `/releases`
-- `/releases/{release_id}`
-- `/releases/{release_id}/pause`
-- `/releases/{release_id}/resume`
-- `/releases/{release_id}/rollback`
-- `/internal/release-loop/tick`
+- пошаговый canary rollout
+- pause/resume релиза
+- rollback при нарушении SLO
+- быстрое переключение на 100 процентов
+- служебная tick-ручка для release loop
 
 ## Структура проекта
 
-- `app/` — код FastAPI-сервиса
-- `app/main.py` — HTTP API и базовая service runtime логика
-- `app/config.py` — настройки сервиса через переменные окружения
-- `deploy/` — файлы для раскатки сервиса
-- `Dockerfile` — сборка контейнера
-- `pyproject.toml`, `uv.lock` — зависимости Python
-- `.env.example` — пример конфигурации
+- `app/` — основной код приложения
+  - `main.py` — FastAPI-приложение и HTTP-ручки
+  - `config.py` — настройки сервиса
+
+- `deploy/` — файлы и переменные для развертывания
+- `.env.example` — пример переменных окружения
+- `Dockerfile` — сборка Docker-образа
+- `pyproject.toml` — зависимости и настройки Python-проекта
+- `requirements.txt` — список зависимостей для совместимого запуска без uv
 
 ## Быстрый старт локально
 
-1. Установить зависимости:
+1. Установите зависимости:
    ```bash
-   uv sync --frozen
+   uv sync
    ```
 
-2. Запустить сервис:
+2. Создайте `.env` на основе `.env.example`:
    ```bash
-   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   cp .env.example .env
    ```
 
-3. Проверить, что сервис живой:
+3. Запустите сервис:
    ```bash
-   curl http://localhost:8000/health
+   uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
    ```
+
+Если `uv` не используется, можно запустить через обычный virtualenv:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
 ## Переменные окружения
+- `DATABASE_URL`
+- `ROUTING_SERVICE_URL`
+- `DEPLOYMENT_SERVICE_URL`
+- `PROMETHEUS_URL`
+- `SECURITY_SERVICE_URL`
+- `SERVICE_TOKEN`
+- `LOG_LEVEL`
 
-- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — подключение к PostgreSQL
-- `K8S_NAMESPACE` — namespace платформы в Kubernetes
-- `SECURITY_AUDIT_BASE_URL` — адрес security/audit service
-- `SECURITY_AUDIT_SERVICE_TOKEN` — service-to-service токен
-- `STATUS_PROMETHEUS_BASE_URL` — адрес Prometheus для сервисов, которым нужны метрики
-- `IMAGE_REPOSITORY`, `IMAGE_TAG`, `RELEASE_NAME`, `KUBECONFIG_PATH` — параметры deploy-скриптов
+Пример `.env`:
 
-Полный пример лежит в `.env.example`.
-
-## Docker
-
-```bash
-docker build -t awesomecosmonaut/release_controller:latest .
-docker run --env-file .env -p 8000:8000 awesomecosmonaut/release_controller:latest
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/llm_platform
+SERVICE_TOKEN=change-me
+LOG_LEVEL=INFO
 ```
 
-## Деплой
+## Основные API-ручки
+- `GET /health`
+- `GET /livez`
+- `GET /service-info`
+- `GET /releases`
+- `POST /releases`
+- `GET /releases/{release_id}`
+- `POST /releases/{release_id}/pause`
+- `POST /releases/{release_id}/resume`
+- `POST /releases/{release_id}/rollback`
+- `POST /tick`
 
-Файлы для раскатки лежат в `deploy/`.
+## Сборка и запуск в Docker
 
 ```bash
-cd deploy
-./deploy-from-scratch.sh
+docker build -t hse-llm-project-2026/release_controller:local .
+docker run --env-file .env -p 8000:8000 hse-llm-project-2026/release_controller:local
 ```
 
-Если нужно пересобрать образ и полностью переустановить сервис:
+## Деплой в Kubernetes
 
-```bash
-cd deploy
-./rebuild-delete-deploy.sh
-```
+Файлы развертывания лежат в папке `deploy/`. Для сервисов, которые уже подключены к стенду, используются Helm values и deploy-скрипты из соответствующего репозитория или общего инфраструктурного пайплайна.
+
+## Метрики и документация
+
+- Swagger UI: `/docs`
+- OpenAPI: `/openapi.json`
+- Health check: `/health`
+- Liveness check: `/livez`
 
 ## Автор
 
